@@ -1,10 +1,23 @@
-import { useNavigate, Form, useActionData, redirect } from 'react-router-dom'
-import { addData } from '../data/Clients'
+import { Form, useNavigate, useLoaderData, redirect, useActionData } from "react-router-dom"
+import { getClient, updateData } from "../data/Clients"
+import FormClient from "./FormClient"
+import Error from "./Error"
 
-import FormClient from '../components/FormClient'
-import Error from '../components/Error'
+export async function loader({params}) {
 
-export async function action({request}) {
+  const client = await getClient(params.id)
+
+  if(Object.values(client).length === 0) {
+    throw new Response('', {
+      status: 404,
+      statusText: 'Client Not found'
+    })
+  }
+
+  return client
+}
+
+export async function action({request, params}) {
   const formData = await request.formData()
 
   const data = Object.fromEntries(formData)
@@ -25,21 +38,22 @@ export async function action({request}) {
     return errors
   }
 
-  await addData(data)
+  await updateData(params.id, data)
 
   return redirect('/')
 }
 
-function NewClient() {
+
+const EditClient = () => {
 
   const navigate = useNavigate()
-
+  const client = useLoaderData()
   const errors = useActionData()
 
   return (
-    <>
-      <h1 className="font-black text-4xl text-blue-900">Clientes</h1>
-      <p className="mt-3">Administra tus Clientes</p>
+    <div>
+       <h1 className="font-black text-4xl text-blue-900">Editar Cliente</h1>
+      <p className="mt-3">Aca puedes modificar el Cliente</p>
 
       <div className="flex justify-end">
         <button
@@ -58,17 +72,19 @@ function NewClient() {
           method='POST'
           noValidate
         >
-          <FormClient />
+          <FormClient 
+            client={client}
+          />
 
           <input 
             type="submit"
             className="mt-3 w-full bg-blue-800 p-3 uppercase font-bold text-white text-lg cursor-pointer"
-            value="Registrar Cliente"
+            value="Guardar Cambios"
           />
         </Form>
       </div>
-    </>
+    </div>
   )
 }
 
-export default NewClient
+export default EditClient
